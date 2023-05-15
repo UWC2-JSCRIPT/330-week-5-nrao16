@@ -4,9 +4,9 @@ const router = Router();
 const jwtToken = require('jsonwebtoken');
 
 const userDAO = require('../daos/user');
-const isAuthorized = require('./auth')
+const {isAuthorized} = require('./auth')
 
-// signup
+// signup with user email and password
 router.post("/signup", async (req, res, next) => {
     const user = req.body;
     if (!user || JSON.stringify(user) === '{}' || !user.email || !user.password) {
@@ -18,6 +18,7 @@ router.post("/signup", async (req, res, next) => {
                 res.status(409).send('User email already signed up.')
             } else {
                 const hashedPassword = await bcrypt.hash(user.password, 4);
+                // default role of 'user' is always added
                 await userDAO.createUser({ email: user.email, password: hashedPassword.toString(), roles: ['user'] });
                 res.status(200).send(`Signed up user email ${user.email}`);
             }
@@ -27,7 +28,7 @@ router.post("/signup", async (req, res, next) => {
     }
 });
 
-// login to get a jwt token
+// login with email and password to get a jwt token
 router.post("/", async (req, res, next) => {
     const user = req.body;
     if (!user || JSON.stringify(user) === '{}' || !user.email || !user.password) {
@@ -35,7 +36,6 @@ router.post("/", async (req, res, next) => {
     } else {
         try {
             const saveduser = await userDAO.getUser(user.email);
-            console.log(`saveduser=${JSON.stringify(saveduser)}`);
 
             const isPasswordMatch = await bcrypt.compare(user.password, saveduser.password);
 
@@ -47,7 +47,6 @@ router.post("/", async (req, res, next) => {
                     roles: saveduser.roles
                 }, 'secret');;
 
-                console.log(token);
                 res.json({ token: token });
             } else {
                 res.status(401).send('Invalid password');
@@ -58,7 +57,7 @@ router.post("/", async (req, res, next) => {
     }
 });
 
-// password update
+// update password with jwt token
 router.post("/password", isAuthorized, async (req, res, next) => {
     const { password } = req.body;
     const decodedUser = req.user;
@@ -67,7 +66,6 @@ router.post("/password", isAuthorized, async (req, res, next) => {
     } else {
         try {
             const hashedPassword = await bcrypt.hash(password, 4);
-            console.log(`---- _id:${decodedUser._id}`);
             const updatedUser = await userDAO.updateUserPassword(decodedUser._id, hashedPassword.toString());
             if (updatedUser.matchedCount > 0) {
                 res.status(200).send('Password updated');
