@@ -15,10 +15,10 @@ module.exports.create = async (orderObj) => {
 }
 
 module.exports.getById = async (orderId) => {
-    console.log(`getById`);
     const ordersWithItems = Order.aggregate([{
         $match: { _id: new mongoose.Types.ObjectId(orderId) }
     },
+    { $unwind: { path: '$items' } },
     {
         $lookup:
         {
@@ -28,15 +28,22 @@ module.exports.getById = async (orderId) => {
             as: "items"
         }
     },
-    { $project: { "_id": 0, "__v": 0, "items._id": 0, "items.__v": 0 } }
+    { $unwind: "$items" },
+    { $project: { "items._id": 0, "items.__v": 0 } },
+    {
+        $group: {
+            _id: "$_id",
+            userId: { $first: "$userId" },
+            total: { $first: "$total" },
+            items: { $push: "$items" }
+        }
+    }
     ]);
 
-    console.log(`orderWithItems - ${JSON.stringify(ordersWithItems)}`);
     return ordersWithItems;
 }
 
 module.exports.getByUserAndId = async (userId, orderId) => {
-    console.log(`getByUserAndId`);
 
     const ordersWithItemsForUser = Order.aggregate([{
         $match: {
@@ -44,6 +51,7 @@ module.exports.getByUserAndId = async (userId, orderId) => {
             userId: new mongoose.Types.ObjectId(userId)
         }
     },
+    { $unwind: { path: '$items' } },
     {
         $lookup:
         {
@@ -53,19 +61,27 @@ module.exports.getByUserAndId = async (userId, orderId) => {
             as: "items"
         }
     },
-    { $project: { "_id": 0, "__v": 0, "items._id": 0, "items.__v": 0 } }
+    { $unwind: "$items" },
+    { $project: { "items._id": 0, "items.__v": 0 } },
+    {
+        $group:
+        {
+            _id: "$_id",
+            userId: { $first: "$userId" },
+            total: { $first: "$total" },
+            items: { $push: "$items" }
+        }
+    }
     ]);
-
+    
     return ordersWithItemsForUser;
 }
 
 module.exports.getAllByUserId = async (userId) => {
-    console.log(`getByUserId`);
     return Order.find({ userId: userId }).lean();
 }
 
 module.exports.getAll = async () => {
-    console.log(`getAll`);
     return Order.find().lean();
 }
 

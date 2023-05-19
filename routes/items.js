@@ -2,7 +2,7 @@ const { Router } = require("express");
 const router = Router();
 
 const itemDAO = require('../daos/item');
-const { isAuthorized, isAdmin } = require('./auth');
+const { isAuthorized, isAdmin } = require('./middleware/auth');
 
 router.use(isAuthorized);
 

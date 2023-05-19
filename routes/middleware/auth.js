@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const userDAO = require('../daos/user');
+const userDAO = require('../../daos/user');
 
 const isAdmin = async (req, res, next) => {
     if (!req?.user?.roles?.includes('admin')) {

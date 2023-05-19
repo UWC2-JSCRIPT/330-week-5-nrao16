@@ -4,7 +4,7 @@ const router = Router();
 const jwtToken = require('jsonwebtoken');
 
 const userDAO = require('../daos/user');
-const {isAuthorized} = require('./auth')
+const {isAuthorized} = require('./middleware/auth')
 
 // signup with user email and password
 router.post("/signup", async (req, res, next) => {

@@ -1,11 +1,10 @@
-const mongoose = require('mongoose');
 const { Router } = require("express");
 const router = Router();
 
 const orderDAO = require('../daos/order');
 const itemDAO = require('../daos/item');
 
-const { isAuthorized, isAdmin } = require('./auth');
+const { isAuthorized } = require('./middleware/auth');
 
 router.use(isAuthorized);
 
@@ -17,14 +16,10 @@ router.post("/", async (req, res, next) => {
             orderItems.some(id => id === null)) {
             res.status(400).send('Item id is required and has to be valid.');
         } else {
-            //console.log(`orderItems - ${JSON.stringify(orderItems)}`);
-
             let totalPrice = 0;
             const mappedIds = [];
             for (const itemId of orderItems) {
-                //console.log(`itemId - ${itemId}`)
                 const existingItem = await itemDAO.getById(itemId);
-                //console.log(`existingItem - ${JSON.stringify(existingItem)}`)
                 if (existingItem) {
                     totalPrice += existingItem?.price;
                     mappedIds.push(existingItem._id);
@@ -33,10 +28,7 @@ router.post("/", async (req, res, next) => {
                 }
 
             }
-            //console.log(`mappedIds - ${mappedIds}`);
-
             const orderObj = { userId: req.user._id, items: mappedIds, total: totalPrice }
-            console.log(`orderObj--${JSON.stringify(orderObj)}`);
             const savedOrder = await orderDAO.create(orderObj);
             res.json(savedOrder);
         }
@@ -54,7 +46,6 @@ router.get("/:id", async (req, res, next) => {
         } else {
             order = await orderDAO.getByUserAndId(req.user._id, req.params.id);
         }
-        console.log(`order -- ${JSON.stringify(order)}`);
         if (order[0]) {
             res.json(order[0]);
         } else {
@@ -69,14 +60,12 @@ router.get("/:id", async (req, res, next) => {
 //  Get all items 
 router.get("/", async (req, res, next) => {
     try {
-        console.log(`req.user._id: ${req.user._id}`);
         let orders = [];
         if (req?.user?.roles?.includes('admin')) {
             orders = await orderDAO.getAll();
         } else {
             orders = await orderDAO.getAllByUserId(req.user._id);
         }
-        console.log(`orders-${JSON.stringify(orders)}`);
         res.json(orders);
     } catch (e) {
         next(e);
