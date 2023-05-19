@@ -18,7 +18,7 @@ module.exports.getById = async (orderId) => {
     const ordersWithItems = Order.aggregate([{
         $match: { _id: new mongoose.Types.ObjectId(orderId) }
     },
-    { $unwind: { path: '$items' } },
+    { $unwind: '$items' },
     {
         $lookup:
         {
@@ -73,7 +73,7 @@ module.exports.getByUserAndId = async (userId, orderId) => {
         }
     }
     ]);
-    
+
     return ordersWithItemsForUser;
 }
 

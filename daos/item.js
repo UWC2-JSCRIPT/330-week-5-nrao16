@@ -19,6 +19,10 @@ module.exports.getById = async (itemId) => {
     return Item.findOne({ _id: itemId }).lean();
 }
 
+module.exports.getListOfIds = async (itemIdList) => {
+    return await Item.find( { _id: { $in: itemIdList } } );
+};
+
 module.exports.updateById = async (itemId, newObj) => {
     if (!mongoose.Types.ObjectId.isValid(itemId)) {
         return false;
