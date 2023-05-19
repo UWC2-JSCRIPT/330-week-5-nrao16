@@ -55,12 +55,13 @@ router.get("/:id", async (req, res, next) => {
             order = await orderDAO.getByUserAndId(req.user._id, req.params.id);
         }
         console.log(`order -- ${JSON.stringify(order)}`);
-        if (order) {
-            res.json(order);
+        if (order[0]) {
+            res.json(order[0]);
         } else {
             res.sendStatus(404);
         }
     } catch (e) {
+        console.log(e);
         next(e);
     }
 });
@@ -73,7 +74,7 @@ router.get("/", async (req, res, next) => {
         if (req?.user?.roles?.includes('admin')) {
             orders = await orderDAO.getAll();
         } else {
-            orders = await orderDAO.getByUserId(req.user._id);
+            orders = await orderDAO.getAllByUserId(req.user._id);
         }
         console.log(`orders-${JSON.stringify(orders)}`);
         res.json(orders);
