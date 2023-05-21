@@ -17,21 +17,36 @@ router.post("/", async (req, res, next) => {
             res.status(400).send('Item id is required and has to be valid.');
         } else {
             let totalPrice = 0;
-            const mappedIds = [];
-            for (const itemId of orderItems) {
-                const existingItem = await itemDAO.getById(itemId);
-                if (existingItem) {
-                    totalPrice += existingItem?.price;
-                    mappedIds.push(existingItem._id);
-                } else {
-                    res.status(400).send(`Item id ${itemId} not found.`);
-                }
+            let mappedIds = [];
+            // get items with details, matching given order item ids
+            const matchedItems = await itemDAO.getByListOfIds(orderItems);
+            let matchedItemsMap = new Map();
 
+            // convert the matched items into a map for faster access in next steps
+            matchedItems.forEach((item) => {
+                matchedItemsMap.set(item._id.toString(), item);
+            });
+
+            let invalidIds = [];
+            // for each order item, get the corresponding matched item from map and add the prices
+            orderItems.forEach(itemId => {
+                if (matchedItemsMap.has(itemId)) {
+                    totalPrice += matchedItemsMap.get(itemId)?.price;
+                    mappedIds.push(itemId);
+                } else {
+                    invalidIds.push(itemId);
+                }
+            });
+            if (invalidIds.length == 0) {
+                const orderObj = { userId: req.user._id, items: mappedIds, total: totalPrice }
+                const savedOrder = await orderDAO.create(orderObj);
+                res.status(200).json(savedOrder);
+            } else {
+                res.status(400).send(`Item id(s) ${JSON.stringify(invalidIds)} not found.`);
             }
-            const orderObj = { userId: req.user._id, items: mappedIds, total: totalPrice }
-            const savedOrder = await orderDAO.create(orderObj);
-            res.json(savedOrder);
         }
+
+
     } catch (e) {
         next(e);
     }
